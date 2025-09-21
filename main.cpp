@@ -1,89 +1,69 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <typeinfo>
 #include <random>
+#include <math.h>
+#include <optional>
 
-#include <raylib.h>
+#include "raylib.h"
+#include "raymath.h"
 
 #define UNUSED(x) ((void)x)
 #define DEBUG(msg) (std::cerr << (msg) << std::endl)
 /* -------------------------------------------------------------------------- */
 /*                               WINDOW CONSTATS                              */
 /* -------------------------------------------------------------------------- */
-#define SCREEN_W 1080
-#define SCREEN_H 720
+#define SCREEN_W 1980
+#define SCREEN_H 1080
 /* -------------------------------------------------------------------------- */
 /*                              PLAYER_CONSTANTS                              */
 /* -------------------------------------------------------------------------- */
-#define PLAYER_SPRITE ("assets/ship.png")
-#define PLAYER_INITIAL_X (SCREEN_W / 2)
-#define PLAYER_INITIAL_Y (SCREEN_H - 20)
-#define PLAYER_INITIAL_U (0.0f)
-#define PLAYER_INITIAL_V (0.0f)
-#define PLAYER_W (100)
-#define PLAYER_H (100)
+static const char*  PLAYER_SPRITE = "assets/ship.png";
+static const float PLAYER_W = 75;
+static const float PLAYER_H = 75;
+static const float PLAYER_INITIAL_X = SCREEN_W / 2;
+static const float PLAYER_INITIAL_Y = SCREEN_H - (PLAYER_H / 2.0f) - /*offset*/30;
+static const float PLAYER_INITIAL_U = 0.0f;
+static const float PLAYER_INITIAL_V = 0.0f;
 /* -------------------------------------------------------------------------- */
 /*                               ENEMY_CONSTANTS                              */
 /* -------------------------------------------------------------------------- */
-#define ENEMY_SPRITE ("assets/enemy.png")
-#define LOWER_Y_BOUND (SCREEN_H / 2)
-#define ENEMY_INITIAL_U (0.0f)
-#define ENEMY_INITIAL_V (0.0f)
-#define ENEMY_W (75)
-#define ENEMY_H (75)
+static const char*  ENEMY_SPRITE = "assets/enemy.png";
+static const float  ENEMY_W = 50.0f;
+static const float  ENEMY_H = 50.0f;
+static const float  UPPER_Y_BOUND = (ENEMY_H / 2.0f) + /*offset*/ 30;
+static const float  LOWER_Y_BOUND = SCREEN_H / 2.0f;
+static const float  ENEMY_INITIAL_U = 0.0f;
+static const float  ENEMY_INITIAL_V = 0.25f;
+/* -------------------------------------------------------------------------- */
+/*                                oritentation                                */
+/* -------------------------------------------------------------------------- */
+#define RIGHT (90)
+#define UP (0)
+#define LEFT (270)
+#define DOWN (180)
 /* -------------------------------------------------------------------------- */
 /*                                 COMPONENTS                                 */
 /* -------------------------------------------------------------------------- */
-enum class CTYPE
-{
-    TRANSFORM,
-    SPRITE,
-    _COUNT,
-    _NOTFOUND,
-};
-
-class Component
-{
-public:
-    Component(CTYPE t) : _type(t)
-    {
-        DEBUG("Component created.");
-    }
-    virtual ~Component() {};
-
-    virtual void print() const = 0;
-    CTYPE getType() const { return _type; }
-
-private:
-    CTYPE _type;
-};
-
+class Component {public:virtual ~Component(){};};
 class CTransform : public Component
 {
 public:
-    CTransform(int x, int y, int u, int v) : Component(CTYPE::TRANSFORM), _x(x), _y(y), _u(u), _v(v)
+    CTransform(float x, float y, float u, float v) : _x(x), _y(y), _u(u), _v(v)
     {
-        DEBUG("Positon Created.");
     };
 
-    void print() const override
-    {
-        std::cout << "\n--- CTransform ---\n";
-        std::cout << "Position: [" << _x << ", " << _y << "]\n";
-        std::cout << "Velocity: [" << _u << ", " << _v << "]\n";
-        std::cout << std::endl;
-    }
-
-    int _x;
-    int _y;
-    int _u;
-    int _v;
+    float _x;
+    float _y;
+    float _u;
+    float _v;
 };
 
 class CSprite : public Component
 {
 public:
-    CSprite(const char *sprite_path, Vector2 size) : Component(CTYPE::SPRITE), sprite_path(sprite_path)
+    CSprite(const char *sprite_path, Vector2 size, int orientation) : spritePath(sprite_path), orientation(orientation)
     {
         // load the sprite
         sprite = LoadTexture(sprite_path);
@@ -99,18 +79,19 @@ public:
         origin = (Vector2){.x = sprite.width / 2.0f, .y = sprite.height / 2.0f};
     }
 
-    void print() const override
-    {
-        std::cout << "\n--- Sprite ---\n";
-        std::cout << "sprite path: " << sprite_path << std::endl;
-        std::cout << "size: [" << dest.width << ", " << dest.height << "]\n";
-    }
-
-    const char *sprite_path;
+    const char *spritePath;
     Texture2D sprite;
     Rectangle src;
     Rectangle dest;
+    int orientation;
     Vector2 origin;
+};
+
+class CInput : public Component
+{
+    public:
+        CInput() {};
+        ~CInput() {};
 };
 
 /* -------------------------------------------------------------------------- */
@@ -121,14 +102,15 @@ class Entity
 public:
     ~Entity() {};
 
-    std::shared_ptr<Component> getComponent(CTYPE t)
+    template<class T>
+    std::shared_ptr<T> get()
     {
         for (auto c : _components)
         {
-            if (c->getType() == t)
-                return c;
+            if (std::dynamic_pointer_cast<T>(c))
+                return std::dynamic_pointer_cast<T>(c);
         }
-        throw std::runtime_error("Component Not found!");
+        return nullptr;
     }
 
     static std::shared_ptr<Entity> createEntity()
@@ -136,37 +118,33 @@ public:
         return std::shared_ptr<Entity>(new Entity());
     }
 
-    void add_component(std::shared_ptr<Component> c)
+    template<typename T>
+    void addComponent(std::shared_ptr<T> c)
     {
         _components.push_back(c);
     };
 
 private:
+    std::vector<std::shared_ptr<Component>> _components;
+
     Entity()
     {
         DEBUG("Entity created.");
     };
-    std::vector<std::shared_ptr<Component>> _components;
 };
 
-struct Vec2
-{
-    int x;
-    int y;
-};
-
-Vec2 generate_random_position(Vec2 xBounds, Vec2 yBounds)
+Vector2 generatePosition(Vector2 xBounds, Vector2 yBounds)
 {
     // setup
     static std::random_device rd;
     static std::mt19937 gen(rd());
 
-    std::uniform_int_distribution xDist(xBounds.x, xBounds.y);
-    std::uniform_int_distribution yDist(yBounds.x, yBounds.y);
+    std::uniform_int_distribution<int> xDist(xBounds.x, xBounds.y);
+    std::uniform_int_distribution<int> yDist(yBounds.x, yBounds.y);
 
-    return Vec2{
-        .x = xDist(gen),
-        .y = yDist(gen),
+    return Vector2{
+        .x = (float)xDist(gen),
+        .y = (float)yDist(gen),
     };
 }
 
@@ -181,8 +159,8 @@ public:
         auto player = Entity::createEntity();
         Vector2 playerSize{.x = PLAYER_W, .y = PLAYER_H};
         // add components
-        player->add_component(std::make_shared<CTransform>(PLAYER_INITIAL_X, PLAYER_INITIAL_Y, PLAYER_INITIAL_U, PLAYER_INITIAL_V));
-        player->add_component(std::make_shared<CSprite>(PLAYER_SPRITE, playerSize));
+        player->addComponent(std::make_shared<CTransform>(PLAYER_INITIAL_X, PLAYER_INITIAL_Y, PLAYER_INITIAL_U, PLAYER_INITIAL_V));
+        player->addComponent(std::make_shared<CSprite>(PLAYER_SPRITE, playerSize, UP));
         // add to vector
         _entities.push_back(player);
         return (*player);
@@ -193,10 +171,10 @@ public:
         auto enemy = Entity::createEntity();
         // position
         Vector2 enemySize{.x = PLAYER_W, .y = PLAYER_H};
-        Vec2 pos = generate_random_position(Vec2{0, SCREEN_W}, Vec2{0, LOWER_Y_BOUND});
+        Vector2 pos = generatePosition(Vector2{0.0f, (float)SCREEN_W}, Vector2{UPPER_Y_BOUND, LOWER_Y_BOUND});
         // add components
-        enemy->add_component(std::make_shared<CTransform>(pos.x, pos.y, ENEMY_INITIAL_U, ENEMY_INITIAL_V));
-        enemy->add_component(std::make_shared<CSprite>(ENEMY_SPRITE, enemySize));
+        enemy->addComponent(std::make_shared<CTransform>(pos.x, pos.y, ENEMY_INITIAL_U, ENEMY_INITIAL_V));
+        enemy->addComponent(std::make_shared<CSprite>(ENEMY_SPRITE, enemySize, DOWN));
         // add to vector
         _entities.push_back(enemy);
         return (*enemy);
@@ -221,8 +199,9 @@ public:
     {
         for (auto e : _entites)
         {
-            auto t = std::dynamic_pointer_cast<CTransform>(e->getComponent(CTYPE::TRANSFORM));
-            update(*t);
+            auto t = e->get<CTransform>();
+            if (t)
+                update(*t);
         }
     }
 
@@ -233,7 +212,6 @@ private:
         t._y += t._v;
     }
 };
-
 /* -------------------------------------------------------------------------- */
 /*                              RENDERING SYSTEM                              */
 /* -------------------------------------------------------------------------- */
@@ -243,22 +221,37 @@ class SRender
 public:
     static void render(std::vector<std::shared_ptr<Entity>> &_entites)
     {
-        CTYPE type = CTYPE::SPRITE;
         for (auto e : _entites)
         {
-            auto s = std::dynamic_pointer_cast<CSprite>(e->getComponent(type));
-            auto t = std::dynamic_pointer_cast<CTransform>(e->getComponent(CTYPE::TRANSFORM));
-            draw(*t, *s);
+            auto s = e->get<CSprite>();
+            auto t = e->get<CTransform>();
+            if (s && t)
+                draw(*t, *s);
         }
     }
 
 private:
     static void draw(CTransform &t, CSprite &s)
     {
+        char buffer[256];
         s.dest.x = t._x;
-        s.dest.y = t._x;
-        DrawTexturePro(s.sprite, s.src, s.dest, s.origin, 0, WHITE);
+        s.dest.y = t._y;
+        sprintf(buffer, "[%.2f, %.2f]", s.dest.x, s.dest.y);
+        DrawTexturePro(s.sprite, s.src, s.dest, s.origin, s.orientation, WHITE);
+        DrawText(buffer, s.dest.x + 20, s.dest.y + 20, 20, BLACK);
     }
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                INPUT SYSTEM                                */
+/* -------------------------------------------------------------------------- */
+class SInput
+{
+    public:
+        static void process(std::vector<std::shared_ptr<Entity>> &_entites) {
+            for (auto e:_entites) {
+            }
+        }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -270,20 +263,24 @@ int main()
 
     auto &_entites = em.get_entites();
 
+    SetConfigFlags(FLAG_WINDOW_HIGHDPI);
     InitWindow(SCREEN_W, SCREEN_H, "Gamer");
     SetTargetFPS(60);
 
     Entity player = em.createPlayer();
     Entity e1 = em.createEnemy();
     Entity e2 = em.createEnemy();
+    Entity e3 = em.createEnemy();
+    Entity e5 = em.createEnemy();
+    Entity e6 = em.createEnemy();
 
     while (!WindowShouldClose())
     {
-        SMovement::move(_entites);
 
         BeginDrawing();
-        ClearBackground(RAYWHITE);
-        SRender::render(_entites);
+            ClearBackground(RAYWHITE);
+            SRender::render(_entites);
+            SMovement::move(_entites);
         EndDrawing();
     }
 }
