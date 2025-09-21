@@ -4,6 +4,7 @@
 #include <typeinfo>
 #include <random>
 #include <math.h>
+#include <map>
 #include <optional>
 
 #include "raylib.h"
@@ -90,8 +91,17 @@ public:
 class CInput : public Component
 {
     public:
-        CInput() {};
+        CInput(std::vector<int> &keys) : keys(keys){};
         ~CInput() {};
+        bool hasKey(int key) {
+            for (auto k:keys) {
+                if (k == key)
+                    return true;
+                return false;
+            }
+        }
+
+    std::vector<int> keys;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -161,6 +171,11 @@ public:
         // add components
         player->addComponent(std::make_shared<CTransform>(PLAYER_INITIAL_X, PLAYER_INITIAL_Y, PLAYER_INITIAL_U, PLAYER_INITIAL_V));
         player->addComponent(std::make_shared<CSprite>(PLAYER_SPRITE, playerSize, UP));
+        // player keybinds
+        std::vector<int> keybinds;
+        keybinds.push_back(KEY_A);
+        keybinds.push_back(KEY_D);
+        player->addComponent(std::make_shared<CInput>(keybinds));
         // add to vector
         _entities.push_back(player);
         return (*player);
@@ -250,10 +265,20 @@ class SInput
     public:
         static void process(std::vector<std::shared_ptr<Entity>> &_entites) {
             for (auto e:_entites) {
+                auto i = e->get<CInput>();
+                auto t = e->get<CTransform>();
+                if (i) {
+                    if (IsKeyDown(KEY_D) && i->hasKey(KEY_D)) {
+                        t->_u = 10;
+                    }
+                    if (IsKeyDown(KEY_A) && i->hasKey(KEY_A)) {
+                        t->_u = -10;
+                    }
+                    
+                }
             }
         }
 };
-
 /* -------------------------------------------------------------------------- */
 /*                                    MAIN                                    */
 /* -------------------------------------------------------------------------- */
@@ -280,6 +305,7 @@ int main()
         BeginDrawing();
             ClearBackground(RAYWHITE);
             SRender::render(_entites);
+            SInput::process(_entites);
             SMovement::move(_entites);
         EndDrawing();
     }
