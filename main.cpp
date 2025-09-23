@@ -1,4 +1,5 @@
 #include <iostream>
+#include <functional>
 #include <memory>
 #include <vector>
 #include <typeinfo>
@@ -15,28 +16,28 @@
 /* -------------------------------------------------------------------------- */
 /*                               WINDOW CONSTATS                              */
 /* -------------------------------------------------------------------------- */
-#define SCREEN_W 1980
-#define SCREEN_H 1080
+#define SCREEN_W 1280
+#define SCREEN_H 720
 /* -------------------------------------------------------------------------- */
 /*                              PLAYER_CONSTANTS                              */
 /* -------------------------------------------------------------------------- */
-static const char*  PLAYER_SPRITE = "assets/ship.png";
+static const char *PLAYER_SPRITE = "assets/ship.png";
 static const float PLAYER_W = 75;
 static const float PLAYER_H = 75;
 static const float PLAYER_INITIAL_X = SCREEN_W / 2;
-static const float PLAYER_INITIAL_Y = SCREEN_H - (PLAYER_H / 2.0f) - /*offset*/30;
-static const float PLAYER_INITIAL_U = 0.0f;
+static const float PLAYER_INITIAL_Y = SCREEN_H - (PLAYER_H / 2.0f) - /*offset*/ 30;
+static const float PLAYER_INITIAL_U = 2.0f;
 static const float PLAYER_INITIAL_V = 0.0f;
 /* -------------------------------------------------------------------------- */
 /*                               ENEMY_CONSTANTS                              */
 /* -------------------------------------------------------------------------- */
-static const char*  ENEMY_SPRITE = "assets/enemy.png";
-static const float  ENEMY_W = 50.0f;
-static const float  ENEMY_H = 50.0f;
-static const float  UPPER_Y_BOUND = (ENEMY_H / 2.0f) + /*offset*/ 30;
-static const float  LOWER_Y_BOUND = SCREEN_H / 2.0f;
-static const float  ENEMY_INITIAL_U = 0.0f;
-static const float  ENEMY_INITIAL_V = 0.25f;
+static const char *ENEMY_SPRITE = "assets/enemy.png";
+static const float ENEMY_W = 50.0f;
+static const float ENEMY_H = 50.0f;
+static const float UPPER_Y_BOUND = (ENEMY_H / 2.0f) + /*offset*/ 30;
+static const float LOWER_Y_BOUND = SCREEN_H / 2.0f;
+static const float ENEMY_INITIAL_U = 0.0f;
+static const float ENEMY_INITIAL_V = 0.5f;
 /* -------------------------------------------------------------------------- */
 /*                                oritentation                                */
 /* -------------------------------------------------------------------------- */
@@ -45,16 +46,24 @@ static const float  ENEMY_INITIAL_V = 0.25f;
 #define LEFT (270)
 #define DOWN (180)
 /* -------------------------------------------------------------------------- */
+/*!                             FORWARD DECLARATION                          !*/
+/* -------------------------------------------------------------------------- */
+class Entity;
+class SInput;
+/* -------------------------------------------------------------------------- */
 /*                                 COMPONENTS                                 */
 /* -------------------------------------------------------------------------- */
-class Component {public:virtual ~Component(){};};
+
+class Component
+{
+public:
+    virtual ~Component() {};
+};
+
 class CTransform : public Component
 {
 public:
-    CTransform(float x, float y, float u, float v) : _x(x), _y(y), _u(u), _v(v)
-    {
-    };
-
+    CTransform(float x, float y, float u, float v) : _x(x), _y(y), _u(u), _v(v) {};
     float _x;
     float _y;
     float _u;
@@ -77,42 +86,64 @@ public:
         // set dest
         dest = (Rectangle){.x = 0, .y = 0, .width = size.x, .height = size.y};
         // set origin
-        origin = (Vector2){.x = sprite.width / 2.0f, .y = sprite.height / 2.0f};
+        origin = (Vector2){.x = dest.width / 2.0f, .y = dest.height / 2.0f};
     }
 
     const char *spritePath;
     Texture2D sprite;
     Rectangle src;
     Rectangle dest;
-    int orientation;
+    float orientation;
     Vector2 origin;
 };
 
-class CInput : public Component
+// change to a command with a map of keys and commands(functions) mapping
+class CCommand : public Component
 {
-    public:
-        CInput(std::vector<int> &keys) : keys(keys){};
-        ~CInput() {};
-        bool hasKey(int key) {
-            for (auto k:keys) {
-                if (k == key)
-                    return true;
-                return false;
-            }
-        }
+public:
+    CCommand() {};
+    ~CCommand() {};
 
-    std::vector<int> keys;
+    std::function<void(std::shared_ptr<Entity>)> getCommand(int key)
+    {
+        auto command = keybinds.find(key);
+        if (command != keybinds.end())
+        {
+            return command->second;
+        }
+        return nullptr;
+    };
+
+    void addKeybind(int key, std::function<void(std::shared_ptr<Entity>)> command)
+    {
+        auto result = keybinds.insert({key, command});
+        if (!result.second)
+            throw std::runtime_error("Keybind already exists");
+    }
+
+private:
+    std::map<int, std::function<void(std::shared_ptr<Entity>)>> keybinds;
+};
+
+class CCollison : public Component
+{
+public:
+    CCollison(bool collided) : collided(collided) {};
+    ~CCollison() {};
+
+    bool collided;
 };
 
 /* -------------------------------------------------------------------------- */
 /*                                    ENTIY                                   */
 /* -------------------------------------------------------------------------- */
+
 class Entity
 {
 public:
     ~Entity() {};
 
-    template<class T>
+    template <class T>
     std::shared_ptr<T> get()
     {
         for (auto c : _components)
@@ -128,7 +159,7 @@ public:
         return std::shared_ptr<Entity>(new Entity());
     }
 
-    template<typename T>
+    template <typename T>
     void addComponent(std::shared_ptr<T> c)
     {
         _components.push_back(c);
@@ -137,9 +168,7 @@ public:
 private:
     std::vector<std::shared_ptr<Component>> _components;
 
-    Entity()
-    {
-        DEBUG("Entity created.");
+    Entity() {
     };
 };
 
@@ -164,22 +193,7 @@ public:
     EntityManager() {};
     ~EntityManager() {};
 
-    Entity &createPlayer()
-    {
-        auto player = Entity::createEntity();
-        Vector2 playerSize{.x = PLAYER_W, .y = PLAYER_H};
-        // add components
-        player->addComponent(std::make_shared<CTransform>(PLAYER_INITIAL_X, PLAYER_INITIAL_Y, PLAYER_INITIAL_U, PLAYER_INITIAL_V));
-        player->addComponent(std::make_shared<CSprite>(PLAYER_SPRITE, playerSize, UP));
-        // player keybinds
-        std::vector<int> keybinds;
-        keybinds.push_back(KEY_A);
-        keybinds.push_back(KEY_D);
-        player->addComponent(std::make_shared<CInput>(keybinds));
-        // add to vector
-        _entities.push_back(player);
-        return (*player);
-    }
+    Entity &createPlayer();
 
     Entity &createEnemy()
     {
@@ -190,9 +204,31 @@ public:
         // add components
         enemy->addComponent(std::make_shared<CTransform>(pos.x, pos.y, ENEMY_INITIAL_U, ENEMY_INITIAL_V));
         enemy->addComponent(std::make_shared<CSprite>(ENEMY_SPRITE, enemySize, DOWN));
+        enemy->addComponent(std::make_shared<CCollison>(false));
         // add to vector
         _entities.push_back(enemy);
         return (*enemy);
+    }
+
+    Entity &createBullet(Vector2 &dir, Vector2 &pos)
+    {
+        static std::vector<std::shared_ptr<Entity>> bullets;
+
+        static float radius = 3.0f;
+        static Color color = BLUE;
+
+        // DrawCircle(x, y, radius, COLOR);
+        auto bullet = Entity::createEntity();
+        // add components
+        bullet->addComponent(std::make_shared<CTransform>(pos.x, pos.y, dir.x, dir.y));
+        // add to vector
+        _entities.push_back(bullet); 
+        return (*bullet);
+    }
+
+    void destroy(std::shared_ptr<Entity> e)
+    {
+        _entities.erase((std::find(_entities.begin(), _entities.end(), e)));
     }
 
     std::vector<std::shared_ptr<Entity>> &get_entites()
@@ -203,10 +239,13 @@ public:
 private:
     std::vector<std::shared_ptr<Entity>> _entities;
 };
+/* ------------------------- ENTITY MANAGER CREATED ------------------------- */
+EntityManager em;
 
 /* -------------------------------------------------------------------------- */
 /*                               MOVEMENT SYSTEM                              */
 /* -------------------------------------------------------------------------- */
+
 class SMovement
 {
 public:
@@ -215,7 +254,8 @@ public:
         for (auto e : _entites)
         {
             auto t = e->get<CTransform>();
-            if (t)
+            auto cc = e->get<CCommand>();
+            if (t && !cc)
                 update(*t);
         }
     }
@@ -225,8 +265,11 @@ private:
     {
         t._x += t._u;
         t._y += t._v;
+        t._x = Clamp(t._x, 0, SCREEN_W);
+        t._y = Clamp(t._y, 0, SCREEN_H);
     }
 };
+
 /* -------------------------------------------------------------------------- */
 /*                              RENDERING SYSTEM                              */
 /* -------------------------------------------------------------------------- */
@@ -260,37 +303,166 @@ private:
 /* -------------------------------------------------------------------------- */
 /*                                INPUT SYSTEM                                */
 /* -------------------------------------------------------------------------- */
+
+std::vector<int> pressedKeys;
 class SInput
 {
-    public:
-        static void process(std::vector<std::shared_ptr<Entity>> &_entites) {
-            for (auto e:_entites) {
-                auto i = e->get<CInput>();
-                auto t = e->get<CTransform>();
-                if (i) {
-                    if (IsKeyDown(KEY_D) && i->hasKey(KEY_D)) {
-                        t->_u = 10;
+public:
+    static std::shared_ptr<Entity> getPlayer(std::vector<std::shared_ptr<Entity>> &_entites)
+    {
+        for (auto e : _entites)
+        {
+            if (e->get<CCommand>())
+                return e;
+        }
+        return nullptr;
+    }
+    static void process(std::vector<std::shared_ptr<Entity>> &_entites)
+    {
+        static auto player = getPlayer(_entites);
+        if (player)
+            playerMouseRotate(player);
+        for (auto k : pressedKeys)
+        {
+            for (auto e : _entites)
+            {
+                auto cc = e->get<CCommand>();
+                if (cc)
+                {
+                    auto command = cc->getCommand(k);
+                    if (command)
+                    {
+                        if (!IsKeyDown(k))
+                            pressedKeys.erase(std::find(pressedKeys.begin(), pressedKeys.end(), k));
+                        command(e);
                     }
-                    if (IsKeyDown(KEY_A) && i->hasKey(KEY_A)) {
-                        t->_u = -10;
-                    }
-                    
                 }
             }
         }
+    }
+
+    static void registerKeyPresses()
+    {
+        int key;
+        while (key = GetKeyPressed())
+        {
+            pressedKeys.push_back(key);
+        }
+    }
+
+    static void playerMoveLeft(std::shared_ptr<Entity> e)
+    {
+        auto t = e->get<CTransform>();
+        t->_x -= t->_u;
+        t->_x = Clamp(t->_x, 0, SCREEN_W);
+    }
+
+    static void playerMoveRight(std::shared_ptr<Entity> e)
+    {
+        auto t = e->get<CTransform>();
+        t->_x += t->_u;
+        t->_x = Clamp(t->_x, 0, SCREEN_W);
+    }
+
+    static void playerShoot(std::shared_ptr<Entity> e)
+    {
+        auto t = e->get<CTransform>();
+        Vector2 dir = {t->_u, t->_v};
+        Vector2 pos = {t->_x, t->_y};
+        em.createBullet(dir, pos);
+        DrawText("Pew Pew!!", t->_x + 30, t->_y - 35, 20, BLACK);
+    }
+
+    static void playerRotateLeft(std::shared_ptr<Entity> e)
+    {
+        auto s = e->get<CSprite>();
+        s->orientation += 1;
+        s->orientation = Clamp(s->orientation, -90.0f, 90.0f);
+    }
+
+    static void playerRotateRight(std::shared_ptr<Entity> e)
+    {
+        auto s = e->get<CSprite>();
+        s->orientation -= 1;
+        s->orientation = Clamp(s->orientation, -90.0f, 90.0f);
+    }
+
+    static void playerMouseRotate(std::shared_ptr<Entity> e)
+    {
+        auto t = e->get<CTransform>();
+        auto s = e->get<CSprite>();
+        Vector2 mouse = GetMousePosition();
+        Vector2 player = {t->_x, t->_y};
+        Vector2 direction = Vector2Subtract(mouse, player);
+        float angle = atan2f(direction.y, direction.x) * RAD2DEG;
+
+        // DEBUG
+        char buffer[256] = {0};
+        sprintf(buffer, "[%.2f]", angle);
+        DrawText(buffer, mouse.x, mouse.y, 30, BLACK);
+        s->orientation = angle + 90;
+    }
+    // command functions
+    /*
+        keybinds
+        Q - move player left
+        E - move player right
+        W - Shoot
+        A - Rotate left
+        D - Rotate right
+    */
 };
+
+class SCollision
+{
+    bool check_collisions(std::vector<std::shared_ptr<Entity>> &_entites)
+    {
+        for (auto e : _entites)
+        {
+            auto col = e->get<CCollison>();
+            if (col)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+Entity &EntityManager::createPlayer()
+{
+    auto player = Entity::createEntity();
+    Vector2 playerSize{.x = PLAYER_W, .y = PLAYER_H};
+    // add components
+    player->addComponent(std::make_shared<CTransform>(PLAYER_INITIAL_X, PLAYER_INITIAL_Y, PLAYER_INITIAL_U, PLAYER_INITIAL_V));
+    player->addComponent(std::make_shared<CSprite>(PLAYER_SPRITE, playerSize, UP));
+    player->addComponent(std::make_shared<CCollison>(false));
+    // player keybinds
+    std::shared_ptr<CCommand> c = std::make_shared<CCommand>();
+    player->addComponent(c);
+    c->addKeybind(KEY_A, SInput::playerMoveLeft);
+    c->addKeybind(KEY_D, SInput::playerMoveRight);
+    c->addKeybind(KEY_W, SInput::playerShoot);
+    // add to vector
+    _entities.push_back(player);
+    return (*player);
+}
 /* -------------------------------------------------------------------------- */
 /*                                    MAIN                                    */
 /* -------------------------------------------------------------------------- */
+
 int main()
 {
-    EntityManager em;
 
     auto &_entites = em.get_entites();
+
+    SetTraceLogLevel(LOG_ERROR);
 
     SetConfigFlags(FLAG_WINDOW_HIGHDPI);
     InitWindow(SCREEN_W, SCREEN_H, "Gamer");
     SetTargetFPS(60);
+
+    ShowCursor();
 
     Entity player = em.createPlayer();
     Entity e1 = em.createEnemy();
@@ -301,12 +473,13 @@ int main()
 
     while (!WindowShouldClose())
     {
+        SInput::registerKeyPresses();
 
         BeginDrawing();
-            ClearBackground(RAYWHITE);
-            SRender::render(_entites);
-            SInput::process(_entites);
-            SMovement::move(_entites);
+        ClearBackground(RAYWHITE);
+        SRender::render(_entites);
+        SInput::process(_entites);
+        SMovement::move(_entites);
         EndDrawing();
     }
 }
