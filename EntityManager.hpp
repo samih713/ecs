@@ -18,7 +18,7 @@ class EntityManager
 {
 public:
     /* ------------------------------ CONSTRUCTION ------------------------------ */
-    EntityManager() : _entities(MAX_ENTITIES, NO_ENTITY), _transforms(MAX_ENTITIES) {} // vector of 512 id's
+    EntityManager() : _entities(MAX_ENTITIES, NO_ENTITY) {} // vector of 512 id's
     ~EntityManager() = default;
     EntityManager(const EntityManager &) = delete;
     EntityManager &operator=(const EntityManager &) = delete;
@@ -37,6 +37,8 @@ private:
     std::vector<entity_id_t> _entities;
     std::vector<CTransform> _transforms;
     entity_id_t _current_id = 0;
+    /* ---------------------------- UTILITY FUNCTIONS --------------------------- */
+    void _register(entity_id_t id);
 };
 
 #endif // ENTITY_MANAGER_HHP
