@@ -1,30 +1,42 @@
 #include "ecs.hpp"
-#include "EntityManager.hpp"
+#include "system.hpp"
+
+EntityManager m_entities;
+
+void spawnEnemy()
+{
+
+    auto e = m_entities.addEntity("enemy");
+    auto enemyPosition = util::randomVector(ENEMY_SPAWN_X_VEC, ENEMY_SPAWN_Y_VEC);
+    auto enemyVelocity = Vector2{
+        .x = 0,
+        .y = 100,
+    };
+
+    auto enemySize = Rectangle{
+        .x = enemyPosition.x,
+        .y = enemyPosition.y,
+        .width = ENEMY_WIDTH,
+        .height = ENEMY_HEIGHT,
+    };
+
+    e->cTransform = std::make_shared<CTransform>(enemyPosition, enemyVelocity, ENEMY_ROTATION);
+    e->cShape = std::make_shared<CShape>("./assets/enemy.png", enemySize);
+}
+
 
 int main()
 {
-    EntityManager em;
-    auto player0 = em.addEntity("player");
-    auto player1 = em.addEntity("player");
-    auto player2 = em.addEntity("player");
-    auto player3 = em.addEntity("player");
-    auto player4 = em.addEntity("player");
+    InitWindow(WINDOW_W, WINDOW_H, WINDOW_TITLE);
+    SetTargetFPS(120);
 
-    em.update();
+    m_entities.update();
 
-    auto &entityVector = em.getEntitites();
-
-    for (auto &e : entityVector)
+    while (!WindowShouldClose())
     {
-        cout << *e << endl;
+        BeginDrawing();
+            ClearBackground(RAYWHITE);
+            systems::render(m_entities.getEntities());
+        EndDrawing();
     }
-    cout << "\n\n------------------------\n\n"; 
-    player1->kill();
-    em.update();
-
-    for (auto &e : entityVector)
-    {
-        cout << *e << endl;
-    }
-    return 0;
 }
