@@ -1,24 +1,30 @@
+#include "ecs.hpp"
 #include "EntityManager.hpp"
 
-int main() {
+int main()
+{
     EntityManager em;
-    auto &entities = em.get_entites();
-    auto &transforms = em.get_transforms();
+    auto player0 = em.addEntity("player");
+    auto player1 = em.addEntity("player");
+    auto player2 = em.addEntity("player");
+    auto player3 = em.addEntity("player");
+    auto player4 = em.addEntity("player");
 
-    entity_id_t player_id = em.create_player();
-    em.destroy(player_id);
+    em.update();
 
-    for (auto &e : entities) {
-        std::cout << e << std::endl;
+    auto &entityVector = em.getEntitites();
+
+    for (auto &e : entityVector)
+    {
+        cout << *e << endl;
     }
-    for (auto &t : transforms) {
-        std::cout << t;
+    cout << "\n\n------------------------\n\n"; 
+    player1->kill();
+    em.update();
+
+    for (auto &e : entityVector)
+    {
+        cout << *e << endl;
     }
+    return 0;
 }
-
-
-/*
-
-[6] [6] [6] [6] [6] [6]
-
-*/
