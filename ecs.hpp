@@ -21,16 +21,6 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
-// Forward declarations
-class Entity;
-class CTransform;
-class CShape;
-class CName;
-class CBBox;
-
-// Aliases
-using entity_vec_t = std::vector<std::shared_ptr<Entity>>;
-using tag_map_t = std::map<string, entity_vec_t>;
 
 // Debug helpers
 static inline void debug(const string &msg)
@@ -39,14 +29,6 @@ static inline void debug(const string &msg)
     std::cerr << "[DEBUG]: " << msg << std::endl;
 #endif
 }
-
-// Project includes (guarded)
-#include "CTransform.hpp"
-#include "CShape.hpp"
-#include "Entity.hpp"
-#include "EntityManager.hpp"
-#include "utils.hpp"
-// #include "system.hpp"
 
 // Window Constants
 static constexpr int WINDOW_W = 980;

@@ -10,6 +10,7 @@ namespace util
 
     Vector2 randomVector(Vector2 maxminX, Vector2 maxminY);
     void drawpos(Vector2 pos);
+    void unloadTextures();
 
 };
 

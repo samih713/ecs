@@ -2,7 +2,11 @@
 #define ENTITY_MANAGER_HPP
 
 #include "ecs.hpp"
+#include "Entity.hpp"
 
+// Aliases
+using entity_vec_t = std::vector<std::shared_ptr<Entity>>;
+using tag_map_t = std::map<string, entity_vec_t>;
 
 class EntityManager
 {
@@ -26,5 +30,7 @@ private:
     void _commitEntities();
     void _removeEntities();
 };
+
+extern EntityManager m_entities;
 
 #endif // ENTITY_MANAGER_HPP

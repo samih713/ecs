@@ -26,7 +26,6 @@ struct CShape
             .y = dst.height / 2,
         };
     }
-    ~CShape() { UnloadTexture(sprite); }
     Rectangle src, dst;
     Vector2 origin;
     Texture2D sprite;
