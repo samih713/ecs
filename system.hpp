@@ -23,7 +23,7 @@ namespace systems
             const auto &origin = shape->origin;
             const auto &rotation = transform->rotation;
             DrawTexturePro(sprite, src, dst, origin, rotation, WHITE);
-            util::drawpos(origin);
+            util::drawpos(Vector2{dst.x + 5.0f, dst.y + 5.0f});
         }
     }
 };
