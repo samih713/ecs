@@ -22,11 +22,12 @@ struct CShape
             .height = height,
         };
         origin = Vector2{
-            .x = width / 2,
-            .y = height / 2,
+            .x = dst.width / 2,
+            .y = dst.height / 2,
         };
     }
     CShape(const CShape &o) = default;
+    ~CShape() { UnloadTexture(sprite); }
     Rectangle src, dst;
     Vector2 origin;
     Texture2D sprite;
