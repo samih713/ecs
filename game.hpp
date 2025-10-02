@@ -5,6 +5,7 @@
 
 namespace game {
     void spawnEnemy();
+    void manageEnemies();
 };
 
 #endif // GAME_HPP

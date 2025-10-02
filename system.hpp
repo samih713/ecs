@@ -13,6 +13,7 @@ namespace systems
         {
             const auto &shape = e->cShape;
             const auto &transform = e->cTransform;
+            const auto &duration = e->cDuration;
             if (!shape || !transform)
             {
                 continue;
@@ -23,7 +24,22 @@ namespace systems
             const auto &origin = shape->origin;
             const auto &rotation = transform->rotation;
             DrawTexturePro(sprite, src, dst, origin, rotation, WHITE);
-            util::drawpos(Vector2{dst.x + 5.0f, dst.y + 5.0f});
+            util::drawPos(Vector2{dst.x + 5.0f, dst.y + 5.0f});
+            if (duration) {
+                util::drawDuration(Vector2{dst.x + 5.0f, dst.y + 25.0f}, duration->m_birth);
+            }
+        }
+    }
+    static void duration_despawn(const entity_vec_t &entities)
+    {
+        auto now = high_resolution_clock::now();
+        for (const auto &e : entities)
+        {
+            const auto &duration = e->cDuration;
+            if (!duration)
+                continue;
+            if (duration->m_birth + duration->m_timeAlive < now)
+                e->m_alive = false;
         }
     }
 };
