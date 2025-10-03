@@ -1,11 +1,21 @@
 #include "EntityManager.hpp"
 
+/* ---------------------------------- meta ---------------------------------- */
+entity_vec_t &EntityManager::getEntities()
+{
+    return m_entities;
+}
+
+entity_vec_t &EntityManager::getEntities(const string &tag)
+{
+    return m_entityMap[tag];
+}
+
 void EntityManager::update()
 {
     _commitEntities();
     _removeEntities();
 }
-
 /* ---------------------------- entity management --------------------------- */
 shared_ptr<Entity> EntityManager::addEntity(const string &tag)
 {
@@ -18,7 +28,6 @@ void EntityManager::destroy(Entity &e)
 {
     e.m_alive = false;
 }
-
 /* ---------------------------- helper functions ---------------------------- */
 void EntityManager::_commitEntities()
 {

@@ -16,13 +16,18 @@ int main()
 
     while (!WindowShouldClose())
     {
+        m_entities.update();
+        /*
+        handleinput
+        movement
+        collision
+        */
         BeginDrawing();
-            game::manageEnemies();
+            GameEngine::sEnemySpawner();
             ClearBackground(RAYWHITE);
             systems::render(m_entities.getEntities());
             systems::duration_despawn(m_entities.getEntities());
         EndDrawing();
-        m_entities.update();
     }
     util::unloadTextures();
     CloseWindow();

@@ -3,9 +3,9 @@
 
 #include "EntityManager.hpp"
 
-namespace game {
+namespace GameEngine {
     void spawnEnemy();
-    void manageEnemies();
+    void sEnemySpawner();
 };
 
 #endif // GAME_HPP

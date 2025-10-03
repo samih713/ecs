@@ -13,8 +13,8 @@ class EntityManager
 public:
     /* ---------------------------------- meta ---------------------------------- */
     EntityManager() = default;
-    entity_vec_t &getEntities() { return m_entities; }
-    entity_vec_t &getEntities(const string &tag) { return m_entityMap[tag]; }
+    entity_vec_t &getEntities();
+    entity_vec_t &getEntities(const string &tag);
     void update();
     /* ---------------------------- entity management --------------------------- */
     shared_ptr<Entity> addEntity(const string &tag);
