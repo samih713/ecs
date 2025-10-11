@@ -8,23 +8,25 @@
 
 #include "Entity.hpp"
 
-using std::vector;
+using std::make_shared;
 using std::map;
-using std::string;
 using std::shared_ptr;
+using std::string;
+using std::vector;
 
-class EntityManager {
-    public:
-        void init();
-        void update();
-        shared_ptr<Entity> addEntity(...);
-        vector<Entity> &getEntities();
-        vector<Entity> &getEntities(const string &);
-    private:
-        vector<Entity> m_entities;
-        map<string, Entity> m_entityMap;
-        vector<Entity> m_toAdd;
+class EntityManager
+{
+public:
+    void init();
+    void update();
+    shared_ptr<Entity> addEntity(const string &tag);
+    vector<shared_ptr<Entity>> &getEntities();
+    vector<Entity> &getEntities(const string &);
 
+private:
+    vector<shared_ptr<Entity>> m_entities;
+    map<string, vector<shared_ptr<Entity>>> m_entityMap;
+    vector<shared_ptr<Entity>> m_toAdd;
 };
 
 #endif // ENTITY_MANAGER_HPP
