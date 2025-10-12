@@ -3,17 +3,29 @@
 
 #include <raylib.h>
 
+#include "Utility.hpp"
+
 struct CTransform
 {
-    Vector2 pos, speed, scale;
-    double angle;
+    Vector2 pos = {0.0f, 0.0f};
+    Vector2 velocity = {0.0f, 0.0f};
+    float angle = 0;
+
+    CTransform(const Vector2 &p, const Vector2 &v, float a)
+        : pos(p), velocity(v), angle(a)
+    {
+    }
 };
+
 struct CShape
 {
-    Color fill, outline;
-    int points;
     float radius, thickness;
+    int sides;
+    Color outline;
+    CShape(float radius, float thickness, int sides, const Color &outline)
+        : radius(radius), thickness(thickness), sides(sides), outline(outline) {}
 };
+
 struct CCollision
 {
     float radius = 0;

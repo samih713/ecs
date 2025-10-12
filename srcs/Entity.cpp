@@ -1,16 +1,7 @@
 #include "Entity.hpp"
 
-#if 1 // delete
-#include <iostream>
-
-using std::cerr;
-using std::cout;
-using std::endl;
-#endif 
-
-Entity::Entity(const string &tag) : m_tag(tag)
+Entity::Entity(const size_t id, const string &tag) : m_id(id), m_tag(tag)
 {
-    // cout << m_tag + " entity created" << endl;
 }
 
 void Entity::destroy()

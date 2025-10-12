@@ -13,8 +13,9 @@ class EntityManager;
 
 class Entity
 {
-public:
     friend EntityManager;
+
+public:
     void destroy();
     bool isActive();
     const string &tag();
@@ -28,16 +29,11 @@ public:
     shared_ptr<CLifeSpan> cLifeSpan;
 
 private:
-    string m_tag = "default";
-    bool m_active;
-    size_t m_id;
+    Entity(const size_t id, const string &tag);
 
-private:
-    Entity() = default;
-    Entity(const string &tag);
-    Entity(const Entity &) = default;
-    Entity &operator=(const Entity &) = default;
-    Entity &operator=(Entity &&) = default;
+    size_t m_id = 0;
+    string m_tag = "default";
+    bool m_active = true;
 };
 
 #endif // ENTITY_HPP

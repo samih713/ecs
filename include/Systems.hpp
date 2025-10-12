@@ -1,10 +1,19 @@
 #ifndef SYSTEMS_HPP
 #define SYSTEMS_HPP
 
-namespace System {
+#include <vector>
+#include <memory>
+
+#include "Entity.hpp"
+
+using std::vector;
+using std::shared_ptr;
+
+namespace System
+{
     void movemnt();
     void user_input();
-    void render();
+    void render(const vector<shared_ptr<Entity>> &entities);
     void enemy_spawner();
     void collision();
 };

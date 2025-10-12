@@ -17,11 +17,10 @@ using std::vector;
 class EntityManager
 {
 public:
-    void init();
     void update();
     shared_ptr<Entity> addEntity(const string &tag);
     vector<shared_ptr<Entity>> &getEntities();
-    vector<Entity> &getEntities(const string &);
+    vector<shared_ptr<Entity>> &getEntities(const string &);
 
 private:
     vector<shared_ptr<Entity>> m_entities;

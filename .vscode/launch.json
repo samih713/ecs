@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/ecs",
+            "program": "${workspaceFolder}/build/geometry_wars",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",

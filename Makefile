@@ -2,7 +2,7 @@ RM:= rm -rf
 
 NAME:=geometry_wars
 CXX:=g++
-CXXFLAGS:=-Wall -Wextra -Werror -MMD -MP
+CXXFLAGS:=-Wall -Wextra -Werror -MMD -MP -ggdb3
 
 SRCS_DIR:=srcs
 SRCS:=$(wildcard $(SRCS_DIR)/*.cpp)
