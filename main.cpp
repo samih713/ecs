@@ -9,16 +9,20 @@ using std::endl;
 #include <raylib.h>
 #include <raymath.h>
 
+#include "geometry_wars.hpp"
 #include "Game.hpp"
 
 int main()
 {
-    InitWindow(1920, 1080, "Circle");
+    InitWindow(SCREEN_W, SCREEN_H, "Geometry Wars");
+    SetTargetFPS(60);
 
     Game game;
-    game.spawnEnemy();
-    game.spawnEnemy();
-    game.spawnEnemy();
+    for (int i = 0; i < 15; ++i)
+    {
+        game.spawnEnemy();
+    }
+
     while (!WindowShouldClose())
     {
         BeginDrawing();
