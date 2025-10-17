@@ -9,10 +9,10 @@ struct CTransform
 {
     Vector2 pos = {0.0f, 0.0f};
     Vector2 velocity = {0.0f, 0.0f};
-    float angle = 0;
+    int rotation = 0;
 
-    CTransform(const Vector2 &p, const Vector2 &v, float a)
-        : pos(p), velocity(v), angle(a)
+    CTransform(const Vector2 &p, const Vector2 &v, int r)
+        : pos(p), velocity(v), rotation(r)
     {
     }
 };
@@ -28,7 +28,8 @@ struct CShape
 
 struct CCollision
 {
-    float radius = 0;
+    CCollision(float radius) : radius(radius) {}
+    float radius = 5;
 };
 struct CInput
 {

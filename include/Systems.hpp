@@ -11,11 +11,11 @@ using std::shared_ptr;
 
 namespace System
 {
-    void movemnt();
+    void movement(const vector<shared_ptr<Entity>> &entities);
     void user_input();
     void render(const vector<shared_ptr<Entity>> &entities);
-    void enemy_spawner();
-    void collision();
+    void enemy_spawner(const vector<shared_ptr<Entity>> &ememies);
+    void collision(const vector<shared_ptr<Entity>> &entities);
 };
 
 #endif // SYSTEMS_HPP

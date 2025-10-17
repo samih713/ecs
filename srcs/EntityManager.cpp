@@ -20,7 +20,7 @@ vector<shared_ptr<Entity>> &EntityManager::getEntities()
 
 vector<shared_ptr<Entity>> &EntityManager::getEntities(const string &t)
 {
-    return m_entityMap[t];
+    return m_entityMap.at(t);
 }
 
 static void removeDeadEntities(vector<shared_ptr<Entity>> v)
@@ -29,12 +29,12 @@ static void removeDeadEntities(vector<shared_ptr<Entity>> v)
     {
         return !e->isActive();
     };
+    if (v.empty()) return;
     v.erase(remove_if(v.begin(), v.end(), isDead));
 }
 
 void EntityManager::update()
 {
-    // add pending entites
     for (auto e : m_toAdd)
     {
         m_entities.push_back(e);
